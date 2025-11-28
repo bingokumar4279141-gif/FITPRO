@@ -28,7 +28,8 @@ jobs:
           libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libgles2-mesa-dev libglu1-mesa-dev libgl1-mesa-dev \
           libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-          libmtdev-dev libjpeg-dev libfreetype6-dev
+          libmtdev-dev libjpeg-dev libfreetype6-dev \
+          libpango1.0-dev libcairo2-dev
 
     - name: Set up Java
       uses: actions/setup-java@v3
