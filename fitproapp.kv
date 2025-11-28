@@ -1,0 +1,174 @@
+#:kivy 2.0
+
+<FitProInterface>:
+    orientation: 'vertical'
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: 'background_bg.jpg'
+
+    # Header (kept minimal)
+    Label:
+        text: "[b]FITPRO[/b]"
+        markup: True
+        font_name: 'Roboto'
+        font_size: '28sp'
+        color: (0, 0, 0, 1)
+        size_hint_y: 0.12
+        padding: [dp(10), dp(10)]
+
+    # Main: dashboard (2x2 grid)
+    BoxLayout:
+        id: dashboard
+        orientation: 'vertical'
+        size_hint_y: 0.78
+        padding: dp(10)
+        spacing: dp(8)
+
+        GridLayout:
+            cols: 2
+            rows: 2
+            spacing: dp(10)
+            size_hint_y: 1
+
+            # 1) Goal (circular progress)
+            FloatLayout:
+                padding: dp(12)
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0
+
+                CircularProgress:
+                    id: goal_circle
+                    size_hint: None, None
+                    size: dp(120), dp(120)
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.65}
+                    value: root.steps
+                    max: root.goal
+
+                Label:
+                    text: 'Goal'
+                    font_name: 'Roboto'
+                    font_size: '14sp'
+                    color: (0, 0, 0, 1)
+                    size_hint: None, None
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.95}
+
+                Label:
+                    id: goal_value
+                    text: str(root.goal)
+                    font_name: 'Roboto'
+                    font_size: '18sp'
+                    color: (0, 0, 0, 1)
+                    size_hint: None, None
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.35}
+
+            # 2) Calories burned
+            FloatLayout:
+                padding: dp(12)
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0
+                AnimatedGif:
+                    source: 'calories.gif'
+                    size_hint: None, None
+                    size: dp(80), dp(80)
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.65}
+
+                Label:
+                    text: 'Calories'
+                    font_name: 'Roboto'
+                    font_size: '14sp'
+                    color: (0, 0, 0, 1)
+                    size_hint: None, None
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.95}
+
+                Label:
+                    id: calories_value
+                    text: '0 kcal'
+                    font_name: 'Roboto'
+                    font_size: '18sp'
+                    color: (0, 0, 0, 1)
+                    size_hint: None, None
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.25}
+
+            # 3) Steps (circular progress)
+            FloatLayout:
+                padding: dp(12)
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0
+
+                CircularProgress:
+                    id: steps_circle
+                    size_hint: None, None
+                    size: dp(120), dp(120)
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.65}
+                    value: root.steps
+                    max: root.goal
+
+                Label:
+                    text: 'Steps'
+                    font_name: 'Roboto'
+                    font_size: '14sp'
+                    color: (0, 0, 0, 1)
+                    size_hint: None, None
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.95}
+
+                Label:
+                    id: steps_label
+                    text: str(root.steps)
+                    font_name: 'Roboto'
+                    font_size: '18sp'
+                    color: (0, 0, 0, 1)
+                    size_hint: None, None
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.35}
+
+            # 4) Distance (animated icon + value)
+            FloatLayout:
+                padding: dp(12)
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0
+
+                AnimatedGif:
+                    source: 'jogging.gif'
+                    size_hint: None, None
+                    size: dp(100), dp(100)
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.65}
+
+                Label:
+                    text: 'Distance'
+                    font_name: 'Roboto'
+                    font_size: '14sp'
+                    color: (0, 0, 0, 1)
+                    size_hint: None, None
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.95}
+
+                Label:
+                    id: distance_value
+                    text: '0.0 km'
+                    font_name: 'Roboto'
+                    font_size: '18sp'
+                    color: (0, 0, 0, 1)
+                    size_hint: None, None
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.25}
+
+    # Navigation (simplified)
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: 0.1
+        spacing: dp(5)
+        padding: dp(5)
+
+        # Dashboard button
+        Button:
+            text: 'Dashboard'
+            on_press: app.root.current = 'main'
+        
+        # Chatbot button
+        Button:
+            text: 'AI Assistant'
+            on_press: app.root.current = 'chatbot'
+
