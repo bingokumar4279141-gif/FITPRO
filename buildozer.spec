@@ -18,6 +18,7 @@ android.api = 31
 android.minapi = 24
 android.ndk = 25b
 android.accept_sdk_license = True
+android.archs = armeabi-v7a
 
 # For real step counter access on Android 10+
 # ACTIVITY_RECOGNITION permission is required for access to the step counter sensor
