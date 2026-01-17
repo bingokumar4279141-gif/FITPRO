@@ -414,19 +414,12 @@ class ChatbotScreen(Screen):
         super().__init__(**kwargs)
         self.name = 'chatbot'
         
-        # Initialize chatbot: read API key from environment for safety
-        # Ensure .env is loaded (reload to be safe)
-        load_dotenv(override=True)
-        CHATBOT_API_KEY = os.environ.get("FITPRO_GEMINI_API_KEY")
+        # API key is hardcoded for this project build
+        CHATBOT_API_KEY = "AIzaSyDnBS9gmW6Dr6uY5WAX4KdY4pFnwWj9DOA"
         
-        if CHATBOT_API_KEY:
-            print(f"[INFO] API key loaded: {CHATBOT_API_KEY[:20]}...")
-        else:
-            print("[WARN] FITPRO_GEMINI_API_KEY not found. Using fallback responses.")
-            print("[INFO] To enable AI: get key from https://aistudio.google.com/app/apikey")
-            print("[INFO] Set it in .env: FITPRO_GEMINI_API_KEY=your-key-here")
+        print(f"[INFO] Chatbot initialized with API key")
         
-        # If no key provided, FitProChatbot will use offline fallback responses
+        # Initialize chatbot with the hardcoded API key
         self.chatbot = FitProChatbot(api_key=CHATBOT_API_KEY)
         self.messages: list = []
         
