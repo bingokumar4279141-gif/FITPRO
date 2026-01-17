@@ -77,7 +77,11 @@ If the question is not fitness-related, politely redirect to fitness topics."""
         """Initialize Google Gemini API"""
         try:
             import google.generativeai as genai
+            self.genai = genai
+            self.api_key = api_key
+            # Configure globally (also store key for direct use)
             genai.configure(api_key=api_key)
+            # Create model instance
             self.model = genai.GenerativeModel('gemini-2.5-flash')
             self.use_api = True
             print("[INFO] Gemini API initialized successfully")
@@ -121,37 +125,43 @@ If the question is not fitness-related, politely redirect to fitness topics."""
     def _get_api_response(self, user_message: str) -> ChatbotResponse:
         """Get response using Google Gemini API with conversation history"""
         try:
-            # Add user message to history
+            # Construct message with system prompt context included in user message
+            full_message = f"{self.system_prompt}\n\nUser: {user_message}"
+
+            # Call API directly (simpler approach that works reliably)
+            # Ensure the genai client is configured with the correct key for this call
+            try:
+                if hasattr(self, 'genai') and self.api_key:
+                    self.genai.configure(api_key=self.api_key)
+                else:
+                    import google.generativeai as genai
+                    genai.configure(api_key=self.api_key)
+                    self.genai = genai
+                # Ensure model instance exists
+                if not self.model:
+                    self.model = self.genai.GenerativeModel('gemini-2.5-flash')
+            except Exception as cfg_e:
+                print(f"[WARN] Failed to (re)configure Gemini client: {cfg_e}")
+
+            response = self.model.generate_content(full_message)
+            assistant_message = response.text
+
+            # Keep a simple conversation log for reference (not sent to API)
             self.chat_history.append({
                 "role": "user",
                 "parts": [user_message]
             })
-            
-            # Start with system prompt as first message
-            if not self.chat_history or (len(self.chat_history) > 0 and self.chat_history[0].get("role") != "system"):
-                self.chat_history.insert(0, {
-                    "role": "user",
-                    "parts": [self.system_prompt]
-                })
-            
-            # Use conversation history for context-aware responses
-            response = self.model.generate_content(
-                [{"role": msg["role"], "parts": msg["parts"]} for msg in self.chat_history]
-            )
-            assistant_message = response.text
-            
-            # Add assistant response to history
             self.chat_history.append({
                 "role": "model",
                 "parts": [assistant_message]
             })
-            
-            # Keep only last 20 messages (10 exchanges) to manage token usage
+
+            # Limit history to prevent unbounded growth
             if len(self.chat_history) > 20:
                 self.chat_history = self.chat_history[-20:]
-            
+
             return ChatbotResponse(assistant_message)
-        
+
         except Exception as e:
             print(f"[ERROR] API response error: {e}")
             # Fallback to default response

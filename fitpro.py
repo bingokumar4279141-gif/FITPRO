@@ -17,8 +17,12 @@ from kivy.uix.button import Button
 import os
 from PIL import Image as PILImage
 from io import BytesIO
+from dotenv import load_dotenv
 from chatbot import FitProChatbot, ChatMessage
 from fitness_calc import calculate_stride_length, calculate_calories_burned
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Android permission helper
 def request_activity_recognition_permission():
@@ -411,14 +415,16 @@ class ChatbotScreen(Screen):
         self.name = 'chatbot'
         
         # Initialize chatbot: read API key from environment for safety
-        # Set the environment variable `FITPRO_GEMINI_API_KEY` before running
-        # Example (PowerShell temporary session): $env:FITPRO_GEMINI_API_KEY="your-key"
-        import os
+        # Ensure .env is loaded (reload to be safe)
+        load_dotenv(override=True)
         CHATBOT_API_KEY = os.environ.get("FITPRO_GEMINI_API_KEY")
         
-        # Fallback: use hardcoded key if env var not set
-        if not CHATBOT_API_KEY:
-            CHATBOT_API_KEY = "AIzaSyCEJEUGfmWeDdDF9JZSK2kVvCoSCsqGf-4"
+        if CHATBOT_API_KEY:
+            print(f"[INFO] API key loaded: {CHATBOT_API_KEY[:20]}...")
+        else:
+            print("[WARN] FITPRO_GEMINI_API_KEY not found. Using fallback responses.")
+            print("[INFO] To enable AI: get key from https://aistudio.google.com/app/apikey")
+            print("[INFO] Set it in .env: FITPRO_GEMINI_API_KEY=your-key-here")
         
         # If no key provided, FitProChatbot will use offline fallback responses
         self.chatbot = FitProChatbot(api_key=CHATBOT_API_KEY)
@@ -451,7 +457,9 @@ class ChatbotScreen(Screen):
             background_down='SEND.png',
             border=(0, 0, 0, 0)
         )
-        send_btn.bind(on_press=self.send_message)
+        # Use on_release to avoid duplicate triggers from press/down events
+        self.send_btn = send_btn
+        send_btn.bind(on_release=self.send_message)
         input_layout.add_widget(send_btn)
         
         main_layout.add_widget(input_layout)
@@ -472,17 +480,28 @@ class ChatbotScreen(Screen):
     
     def send_message(self, instance):
         """Send a message to the chatbot"""
+        # Prevent concurrent sends which can produce duplicate output
+        if getattr(self, '_awaiting_response', False):
+            return
         message_text = self.text_input.text.strip()
         if not message_text:
             return
-        
         # Add user message to UI
         self._add_user_message(message_text)
         self.text_input.text = ''
-        
-        # Get bot response
-        response = self.chatbot.get_response(message_text)
-        self._add_bot_message(response.message)
+
+        # Mark awaiting state and disable send button to avoid duplicates
+        self._awaiting_response = True
+        try:
+            if hasattr(self, 'send_btn') and self.send_btn:
+                self.send_btn.disabled = True
+            # Get bot response
+            response = self.chatbot.get_response(message_text)
+            self._add_bot_message(response.message)
+        finally:
+            self._awaiting_response = False
+            if hasattr(self, 'send_btn') and self.send_btn:
+                self.send_btn.disabled = False
     
     def _add_user_message(self, text: str):
         """Add a user message to the chat display"""
