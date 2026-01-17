@@ -8,7 +8,7 @@ source.include_exts = py,png,jpg,kv,ttf
 
 version = 1.0
 
-requirements = kivy==2.3.1,plyer,pillow,google-generativeai,python-dotenv
+requirements = kivy==2.3.1,plyer,pillow
 
 orientation = portrait
 
