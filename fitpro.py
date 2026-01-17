@@ -414,13 +414,13 @@ class ChatbotScreen(Screen):
         super().__init__(**kwargs)
         self.name = 'chatbot'
         
-        # API key is hardcoded for this project build
-        CHATBOT_API_KEY = "AIzaSyDnBS9gmW6Dr6uY5WAX4KdY4pFnwWj9DOA"
+        # Backend server URL for AI responses
+        BACKEND_URL = "https://fitpro-backend.onrender.com"  # Change this to your deployed backend URL
         
-        print(f"[INFO] Chatbot initialized with API key")
+        print(f"[INFO] Chatbot initialized with backend: {BACKEND_URL}")
         
-        # Initialize chatbot with the hardcoded API key
-        self.chatbot = FitProChatbot(api_key=CHATBOT_API_KEY)
+        # Initialize chatbot with backend URL
+        self.chatbot = FitProChatbot(backend_url=BACKEND_URL)
         self.messages: list = []
         
         # Main layout with proper sizing
