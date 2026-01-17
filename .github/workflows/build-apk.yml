@@ -42,8 +42,13 @@ jobs:
         python -m pip install --upgrade pip setuptools wheel
         pip install cython
         pip install buildozer
-        # Install Kivy and other runtime deps (building Kivy requires the system libs above)
-        pip install kivy==2.1.0 plyer pillow
+        pip install kivy==2.1.0 plyer pillow python-dotenv
+
+    - name: Create .env file with API key
+      run: |
+        echo "FITPRO_GEMINI_API_KEY=${{ secrets.FITPRO_GEMINI_API_KEY }}" > .env
+      env:
+        FITPRO_GEMINI_API_KEY: ${{ secrets.FITPRO_GEMINI_API_KEY }}
 
     - name: Build APK
       run: |
