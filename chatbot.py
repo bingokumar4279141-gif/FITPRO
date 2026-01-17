@@ -1,12 +1,13 @@
 """
 AI Chatbot Module for FitPro
-Handles chat interactions with Google's Gemini API or fallback to local responses
+Handles chat interactions with FitPro Backend or local fallback responses
 """
 
 import json
 from datetime import datetime
 from typing import Optional, List, Dict
 import socket
+import requests
 
 
 def check_internet_connection(host="8.8.8.8", port=53, timeout=3):
@@ -42,14 +43,16 @@ class FitProChatbot:
         "tired": "Rest is important for recovery! Make sure you're getting 7-9 hours of sleep and staying hydrated.",
     }
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, backend_url: Optional[str] = None):
         """
         Initialize the chatbot
         
         Args:
-            api_key: Optional Google Gemini API key. If not provided, uses fallback responses
+            api_key: Deprecated - no longer used
+            backend_url: URL of the FitPro backend server (e.g., https://fitpro-backend.render.com)
         """
         self.api_key = api_key
+        self.backend_url = backend_url or "https://fitpro-backend.onrender.com"  # Default backend
         self.use_api = False
         self.client = None
         self.model = None
@@ -65,30 +68,20 @@ You help users with:
 Be concise, friendly, and encouraging. Keep responses to 2-3 sentences unless more detail is requested.
 If the question is not fitness-related, politely redirect to fitness topics."""
         
-        # Try to initialize Google Gemini API
-        if api_key:
-            self._init_gemini(api_key)
-            if not self.use_api:
-                print("[INFO] API key provided but initialization failed. Using fallback mode.")
-        else:
-            print("[INFO] No API key provided. Using fallback responses.")
+        # Test backend connection
+        self._test_backend_connection()
     
-    def _init_gemini(self, api_key: str):
-        """Initialize Google Gemini API"""
+    def _test_backend_connection(self):
+        """Test if backend is reachable"""
         try:
-            import google.generativeai as genai
-            self.genai = genai
-            self.api_key = api_key
-            # Configure globally (also store key for direct use)
-            genai.configure(api_key=api_key)
-            # Create model instance
-            self.model = genai.GenerativeModel('gemini-2.5-flash')
-            self.use_api = True
-            print("[INFO] Gemini API initialized successfully")
-        except ImportError:
-            print("[WARN] google-generativeai not installed. Using fallback responses.")
+            response = requests.get(f"{self.backend_url}/health", timeout=2)
+            if response.status_code == 200:
+                self.use_api = True
+                print("[INFO] Connected to FitPro backend")
+            else:
+                print("[WARN] Backend returned non-200 status")
         except Exception as e:
-            print(f"[WARN] Failed to initialize Gemini API: {e}. Using fallback responses.")
+            print(f"[WARN] Could not connect to backend: {e}. Using fallback responses.")
     
     def get_response(self, user_message: str) -> ChatbotResponse:
         """
@@ -107,10 +100,10 @@ If the question is not fitness-related, politely redirect to fitness topics."""
         has_internet = check_internet_connection()
         
         try:
-            if self.use_api and self.model and has_internet:
+            if self.use_api and has_internet:
                 return self._get_api_response(user_message)
-            elif self.use_api and self.model and not has_internet:
-                return ChatbotResponse("❌ No internet connection. Unable to reach AI. Please check your connection.")
+            elif self.use_api and not has_internet:
+                return ChatbotResponse("❌ No internet connection. Unable to reach server. Please check your connection.")
             else:
                 return self._get_fallback_response(user_message)
         except Exception as e:
@@ -123,48 +116,29 @@ If the question is not fitness-related, politely redirect to fitness topics."""
             )
     
     def _get_api_response(self, user_message: str) -> ChatbotResponse:
-        """Get response using Google Gemini API with conversation history"""
+        """Get response using FitPro Backend"""
         try:
-            # Construct message with system prompt context included in user message
-            full_message = f"{self.system_prompt}\n\nUser: {user_message}"
-
-            # Call API directly (simpler approach that works reliably)
-            # Ensure the genai client is configured with the correct key for this call
-            try:
-                if hasattr(self, 'genai') and self.api_key:
-                    self.genai.configure(api_key=self.api_key)
+            # Call backend API
+            response = requests.post(
+                f"{self.backend_url}/chat",
+                json={"message": user_message},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    assistant_message = data.get("message", "No response received")
+                    return ChatbotResponse(assistant_message)
                 else:
-                    import google.generativeai as genai
-                    genai.configure(api_key=self.api_key)
-                    self.genai = genai
-                # Ensure model instance exists
-                if not self.model:
-                    self.model = self.genai.GenerativeModel('gemini-2.5-flash')
-            except Exception as cfg_e:
-                print(f"[WARN] Failed to (re)configure Gemini client: {cfg_e}")
-
-            response = self.model.generate_content(full_message)
-            assistant_message = response.text
-
-            # Keep a simple conversation log for reference (not sent to API)
-            self.chat_history.append({
-                "role": "user",
-                "parts": [user_message]
-            })
-            self.chat_history.append({
-                "role": "model",
-                "parts": [assistant_message]
-            })
-
-            # Limit history to prevent unbounded growth
-            if len(self.chat_history) > 20:
-                self.chat_history = self.chat_history[-20:]
-
-            return ChatbotResponse(assistant_message)
-
+                    return ChatbotResponse(data.get("message", "Backend error"))
+            else:
+                return ChatbotResponse(f"❌ Backend error: {response.status_code}")
+        
+        except requests.Timeout:
+            return ChatbotResponse("❌ Request timeout. Please check your internet connection.")
         except Exception as e:
-            print(f"[ERROR] API response error: {e}")
-            # Fallback to default response
+            print(f"[ERROR] Backend request error: {e}")
             return self._get_fallback_response(user_message)
     
     def _get_fallback_response(self, user_message: str) -> ChatbotResponse:
@@ -178,16 +152,7 @@ If the question is not fitness-related, politely redirect to fitness topics."""
         
         # Generic fitness response
         generic_responses = [
-            "That's a great question! In general, consistency and listening to your body are key to fitness success.",
-            "Great question about fitness! Make sure to stay hydrated, warm up before exercise, and rest between workouts.",
-            "Interesting! Remember that everyone's fitness journey is unique. Focus on progress, not perfection!",
-            "Good thinking! The best workout is the one you'll actually do. Find what you enjoy!",
-            "Nice question! Building a routine that fits your lifestyle is more important than perfection.",
-            "That's important! Remember that rest and recovery are just as crucial as the workout itself.",
-            "Absolutely! Nutrition plays a huge role in achieving your fitness goals.",
-            "Smart thinking! Tracking your progress helps you stay motivated and see improvements over time.",
-            "Great mindset! Starting small and building up gradually is the best approach to long-term success.",
-            "Exactly! Combining cardio, strength training, and flexibility work gives you a well-rounded fitness routine.",
+            "sorry bro app is down"
         ]
         
         import random
