@@ -414,8 +414,8 @@ class ChatbotScreen(Screen):
         super().__init__(**kwargs)
         self.name = 'chatbot'
         
-        # Backend server URL for AI responses
-        BACKEND_URL = "https://fitpro-backend.onrender.com"  # Change this to your deployed backend URL
+        # Backend server URL for real AI responses
+        BACKEND_URL = "https://fitpro-ai.onrender.com"
         
         print(f"[INFO] Chatbot initialized with backend: {BACKEND_URL}")
         

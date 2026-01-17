@@ -1,6 +1,6 @@
 """
 AI Chatbot Module for FitPro
-Handles chat interactions with FitPro Backend or local fallback responses
+Handles chat interactions with FitPro Backend for real AI responses
 """
 
 import json
@@ -48,14 +48,10 @@ class FitProChatbot:
         Initialize the chatbot
         
         Args:
-            api_key: Deprecated - no longer used
-            backend_url: URL of the FitPro backend server (e.g., https://fitpro-backend.render.com)
+            backend_url: URL of the FitPro backend server with real AI
         """
-        self.api_key = api_key
-        self.backend_url = backend_url or "https://fitpro-backend.onrender.com"  # Default backend
+        self.backend_url = backend_url or "https://fitpro-ai.onrender.com"
         self.use_api = False
-        self.client = None
-        self.model = None
         self.chat_history: List[Dict] = []
         self.system_prompt = """You are a friendly and knowledgeable fitness assistant for the FitPro app. 
 You help users with:
